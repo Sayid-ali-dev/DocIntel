@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>DocIntel</title>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;700&family=Syne:wght@700;800&display=swap" rel="stylesheet"/>
+
+  <style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #eeeee8;
+    --surface: #ffffff;
+    --border: #d4d4cc;
+    --accent: #2040e0;
+    --accent-dim: #2040e010;
+    --success: #1a7a3c;
+    --success-dim: #1a7a3c10;
+    --error: #c0392b;
+    --error-dim: #c0392b10;
+    --text: #111118;
+    --muted: #777770;
+    --font-mono: 'IBM Plex Mono', monospace;
+    --font-display: 'Syne', sans-serif;
+  }
+
+  body {
+    background: var(--bg);
+    background-image: radial-gradient(var(--border) 1px, transparent 1px);
+    background-size: 24px 24px;
+    color: var(--text);
+    font-family: var(--font-mono);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+  }
+  .container {
+    width: 100%;
+    max-width: 780px;
+  }
+
+  header {
+    margin-bottom: 2.5rem;
+  }
+
+  .logo {
+    font-family: var(--font-display);
+    font-size: 3rem;
+    font-weight: 800;
+    letter-spacing: -2px;
+    color: var(--text);
+    line-height: 1;
+  }
+
+  .logo span {
+    color: var(--accent);
+  }
+
+  .tagline {
+    font-size: 0.75rem;
+    color: var(--muted);
+    margin-top: 0.4rem;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-top: 3px solid var(--accent);
+    border-radius: 4px;
+    padding: 2rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+  }
+
+  .card-title {
+    font-family: var(--font-display);
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 1.25rem;
+  }
+
+  .upload-area {
+    border: 2px dashed var(--border);
+    border-radius: 8px;
+    padding: 2rem;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+  }
+
+  .upload-area:hover {
+    border-color: var(--accent);
+    background: var(--accent-dim);
+  }
+
+  .upload-area.dragging {
+    border-color: var(--accent);
+    background: var(--accent-dim);
+  }
+
+  .upload-icon {
+    font-size: 2rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .upload-text {
+    font-size: 0.8rem;
+    color: var(--muted);
+    letter-spacing: 1px;
+  }
+
+  .upload-text strong {
+    color: var(--accent);
+    cursor: pointer;
+  }
+
+  input[type="file"] {
+    display: none;
+  }
+
+  .upload-status {
+    display: none;
+    margin-top: 1rem;
+    padding: 0.85rem 1rem;
+    border-radius: 8px;
+    font-size: 0.8rem;
+    letter-spacing: 1px;
+  }
+
+  .upload-status.success {
+    background: var(--success-dim);
+    border: 1px solid var(--success);
+    color: var(--success);
+  }
+
+  .upload-status.error {
+    background: var(--error-dim);
+    border: 1px solid var(--error);
+    color: var(--error);
+  }
+  .input-group {
+    display: flex;
+    gap: 0.75rem;
+  }
+
+  input[type="text"] {
+    flex: 1;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.85rem 1rem;
+    color: var(--text);
+    font-family: var(--font-mono);
+    font-size: 0.9rem;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  input[type="text"]:focus {
+    border-color: var(--accent);
+  }
+
+  input[type="text"]::placeholder {
+    color: var(--muted);
+  }
+
+  button {
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 0.85rem 1.5rem;
+    font-family: var(--font-mono);
+    font-weight: 700;
+    font-size: 0.8rem;
+    letter-spacing: 1px;
+    cursor: pointer;
+    transition: opacity 0.2s, transform 0.1s;
+    white-space: nowrap;
+  }
+
+  button:hover { opacity: 0.85; }
+  button:active { transform: scale(0.97); }
+  button:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .loading {
+    display: none;
+    font-size: 0.8rem;
+    color: var(--muted);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-top: 1rem;
+    animation: pulse 1.2s infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+
+  .answer-box {
+    display: none;
+    margin-top: 1.5rem;
+    animation: fadeIn 0.4s ease;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .answer-text {
+    font-size: 0.9rem;
+    line-height: 1.8;
+    color: var(--text);
+    margin-bottom: 1.5rem;
+  }
+
+  .sources-title {
+    font-size: 0.7rem;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 0.75rem;
+  }
+
+  .source-item {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.85rem 1rem;
+    margin-bottom: 0.5rem;
+    font-size: 0.75rem;
+    color: var(--muted);
+    line-height: 1.6;
+  }
+
+  .source-item strong {
+    color: var(--text);
+    display: block;
+    margin-bottom: 0.25rem;
+  }
+
+  footer {
+    margin-top: 2rem;
+    font-size: 0.7rem;
+    color: var(--muted);
+    letter-spacing: 1px;
+    text-align: left;
+  }
+</style>
+</head>
+
+<body>
+  <div class="container">
+    <header>
+      <div class="logo">Doc<span>Intel</span></div>
+      <div class="tagline">RAG-powered document intelligence</div>
+    </header>
+
+    <!-- Upload Section -->
+    <div class="card">
+      <div class="card-title">01 — Upload Document</div>
+      <div class="upload-area" id="uploadArea" onclick="document.getElementById('fileInput').click()">
+        <div class="upload-icon">📄</div>
+        <div class="upload-text">
+          Drag and drop your PDF here or <strong>browse files</strong>
+        </div>
+      </div>
+      <input type="file" id="fileInput" accept=".pdf" onchange="uploadFile(this.files[0])"/>
+      <div class="upload-status" id="uploadStatus"></div>
+    </div>
+
+    <!-- Question Section -->
+    <div class="card">
+      <div class="card-title">02 — Ask a Question</div>
+      <div class="input-group">
+        <input type="text" id="question" placeholder="Ask anything about your document..."/>
+        <button id="askBtn" onclick="askQuestion()">ASK</button>
+      </div>
+      <div class="loading" id="loading">ANALYZING DOCUMENT...</div>
+      <div class="answer-box" id="answerBox">
+        <div class="answer-text" id="answerText"></div>
+        <div class="sources-title">Sources</div>
+        <div id="sourcesList"></div>
+      </div>
+    </div>
+
+    <footer>MODEL: GPT-4O-MINI &nbsp;|&nbsp; VECTORS: PGVECTOR &nbsp;|&nbsp; BUILT WITH FASTAPI + LANGCHAIN</footer>
+  </div>
+  <script>
+  // Upload functionality
+  const uploadArea = document.getElementById('uploadArea');
+  const uploadStatus = document.getElementById('uploadStatus');
+
+  uploadArea.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    uploadArea.classList.add('dragging');
+  });
+
+  uploadArea.addEventListener('dragleave', () => {
+    uploadArea.classList.remove('dragging');
+  });
+
+  uploadArea.addEventListener('drop', (e) => {
+    e.preventDefault();
+    uploadArea.classList.remove('dragging');
+    const file = e.dataTransfer.files[0];
+    if (file && file.type === 'application/pdf') {
+      uploadFile(file);
+    } else {
+      showUploadStatus('Please upload a PDF file', 'error');
+    }
+  });
+
+  async function uploadFile(file) {
+    if (!file) return;
+
+    showUploadStatus('Uploading...', 'success');
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      const response = await fetch('/upload', {
+        method: 'POST',
+        body: formData
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) throw new Error(data.detail || 'Upload failed');
+
+      showUploadStatus(
+        `✓ ${data.filename} uploaded — ${data.chunks_stored ?? 'unknown'} chunks stored`,
+        'success'
+      );
+
+    } catch (err) {
+      showUploadStatus('✗ ' + err.message, 'error');
+    }
+  }
+
+  function showUploadStatus(message, type) {
+    uploadStatus.textContent = message;
+    uploadStatus.className = 'upload-status ' + type;
+    uploadStatus.style.display = 'block';
+  }
+
+  // Question functionality
+  async function askQuestion() {
+    const question = document.getElementById('question').value.trim();
+    if (!question) return;
+
+    const btn = document.getElementById('askBtn');
+    const loading = document.getElementById('loading');
+    const answerBox = document.getElementById('answerBox');
+
+    btn.disabled = true;
+    loading.style.display = 'block';
+    answerBox.style.display = 'none';
+
+    try {
+      const response = await fetch('/ask', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ question })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) throw new Error(data.detail || 'Request failed');
+
+      document.getElementById('answerText').textContent = data.answer;
+
+      const sourcesList = document.getElementById('sourcesList');
+      sourcesList.innerHTML = '';
+
+      data.sources.forEach((source, index) => {
+        const sourceItem = document.createElement('div');
+        sourceItem.className = 'source-item';
+        sourceItem.innerHTML = `
+          <strong>[${index + 1}] ${source.document_name} — Page ${source.page}</strong>
+          ${source.content}...
+        `;
+        sourcesList.appendChild(sourceItem);
+      });
+
+      answerBox.style.display = 'block';
+
+    } catch (err) {
+      document.getElementById('answerText').textContent = 'Error — ' + err.message;
+      answerBox.style.display = 'block';
+    } finally {
+      btn.disabled = false;
+      loading.style.display = 'none';
+    }
+  }
+
+  document.getElementById('question').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') askQuestion();
+  });
+</script>
+</body>
